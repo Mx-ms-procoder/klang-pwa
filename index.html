@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <title>Klang</title>
+  <meta name="theme-color" content="#0A0A0F" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Klang" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./icons/icon.png" />
+  <link rel="icon" href="./icons/icon.png" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <!-- ============ Bibliothek / Playlists ============ -->
+  <main id="main">
+    <!-- Kopf -->
+    <header class="top">
+      <h1 id="viewTitle">Bibliothek</h1>
+      <button id="importBtn" class="icon-btn" aria-label="Importieren">
+        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 3a1 1 0 0 1 1 1v9.59l2.3-2.3a1 1 0 0 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.42l2.3 2.3V4a1 1 0 0 1 1-1Z"/><path fill="currentColor" d="M5 19a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z"/></svg>
+      </button>
+    </header>
+
+    <!-- Suche -->
+    <div class="searchbar">
+      <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M10 4a6 6 0 1 0 3.7 10.7l4.3 4.3a1 1 0 0 0 1.4-1.4l-4.3-4.3A6 6 0 0 0 10 4Zm-4 6a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z"/></svg>
+      <input id="search" type="search" placeholder="Bibliothek durchsuchen…" autocomplete="off" />
+    </div>
+
+    <!-- Tab-Umschalter -->
+    <div class="tabs">
+      <button class="tab active" data-view="library">Songs</button>
+      <button class="tab" data-view="playlists">Playlists</button>
+    </div>
+
+    <!-- Songs -->
+    <section id="libraryView" class="view">
+      <div class="bulk-row">
+        <button id="playAllBtn" class="pill">▶ Alle abspielen</button>
+        <button id="shuffleAllBtn" class="pill">⤮ Zufällig</button>
+      </div>
+      <ul id="songList" class="list"></ul>
+      <div id="emptyLib" class="empty">
+        <div class="empty-emoji">🎵</div>
+        <p class="empty-title">Noch keine Musik</p>
+        <p class="empty-sub">Tippe oben rechts auf ⬇, um MP3s oder eine ZIP aus der Dateien-App zu importieren.</p>
+        <button id="emptyImport" class="btn-primary">Musik importieren</button>
+      </div>
+    </section>
+
+    <!-- Playlists -->
+    <section id="playlistsView" class="view hidden">
+      <button id="newPlaylistBtn" class="pill">＋ Neue Playlist</button>
+      <ul id="playlistList" class="list"></ul>
+      <div id="emptyPl" class="empty">
+        <div class="empty-emoji">📂</div>
+        <p class="empty-title">Keine Playlists</p>
+      </div>
+    </section>
+
+    <!-- Playlist-Detail -->
+    <section id="playlistDetail" class="view hidden">
+      <button id="plBack" class="back">‹ Zurück</button>
+      <h2 id="plName"></h2>
+      <ul id="plSongs" class="list"></ul>
+    </section>
+  </main>
+
+  <!-- ============ Mini-Player ============ -->
+  <div id="miniPlayer" class="mini hidden">
+    <img id="miniArt" class="mini-art" alt="" />
+    <div class="mini-meta">
+      <div id="miniTitle" class="mini-title"></div>
+      <div id="miniArtist" class="mini-artist"></div>
+    </div>
+    <button id="miniPlay" class="icon-btn" aria-label="Play/Pause"></button>
+    <button id="miniNext" class="icon-btn" aria-label="Weiter">
+      <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M6 5a1 1 0 0 1 1.5-.87l9 6.13a1 1 0 0 1 0 1.74l-9 6.13A1 1 0 0 1 6 17V5Z"/><rect fill="currentColor" x="17" y="5" width="2" height="14" rx="1"/></svg>
+    </button>
+  </div>
+
+  <!-- ============ Now-Playing (Vollbild) ============ -->
+  <div id="nowPlaying" class="np hidden">
+    <button id="npClose" class="np-close" aria-label="Schließen">▾</button>
+    <div class="np-art-wrap"><img id="npArt" class="np-art" alt="" /></div>
+    <div class="np-meta">
+      <div id="npTitle" class="np-title"></div>
+      <div id="npArtist" class="np-artist"></div>
+    </div>
+    <input id="seek" class="seek" type="range" min="0" max="1000" value="0" />
+    <div class="np-times"><span id="curTime">0:00</span><span id="durTime">0:00</span></div>
+    <div class="np-controls">
+      <button id="shuffleBtn" class="ctl small" aria-label="Zufall">⤮</button>
+      <button id="prevBtn" class="ctl" aria-label="Zurück">
+        <svg viewBox="0 0 24 24" width="30" height="30"><path fill="currentColor" d="M18 5a1 1 0 0 0-1.5-.87l-9 6.13a1 1 0 0 0 0 1.74l9 6.13A1 1 0 0 0 18 17V5Z"/><rect fill="currentColor" x="5" y="5" width="2" height="14" rx="1"/></svg>
+      </button>
+      <button id="playBtn" class="ctl play" aria-label="Play/Pause"></button>
+      <button id="nextBtn" class="ctl" aria-label="Weiter">
+        <svg viewBox="0 0 24 24" width="30" height="30"><path fill="currentColor" d="M6 5a1 1 0 0 1 1.5-.87l9 6.13a1 1 0 0 1 0 1.74l-9 6.13A1 1 0 0 1 6 17V5Z"/><rect fill="currentColor" x="17" y="5" width="2" height="14" rx="1"/></svg>
+      </button>
+      <button id="repeatBtn" class="ctl small" aria-label="Wiederholen">↻</button>
+    </div>
+  </div>
+
+  <!-- verstecktes Datei-Eingabefeld -->
+  <input id="fileInput" type="file" accept="audio/*,.mp3,.zip,application/zip" multiple hidden />
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Import-Fortschritt -->
+  <div id="importOverlay" class="overlay hidden">
+    <div class="overlay-card">
+      <div class="spinner"></div>
+      <div id="importMsg">Importiere…</div>
+    </div>
+  </div>
+
+  <script src="./vendor/fflate.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
