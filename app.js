@@ -322,9 +322,10 @@ function dropArt(id) { if (artCache.has(id)) { URL.revokeObjectURL(artCache.get(
 const audio = new Audio();
 audio.preload = 'auto';
 let library = [];
-let queue = [];
+let baseQueue = [];        // Songs in Originalreihenfolge (für Shuffle-Umschalten)
+let queue = [];            // tatsächliche Abspielreihenfolge
 let qIndex = -1;
-let repeat = 'off';
+let repeat = 'all';        // off | all | one  – Standard: ganze Liste wiederholen (Loop)
 let shuffle = false;
 let curUrl = null;
 
@@ -336,11 +337,27 @@ function shuffleArr(a) {
   return x;
 }
 
-function playQueue(songs, startIndex) {
-  if (!songs.length) return;
-  let order = songs, idx = Math.max(0, Math.min(startIndex, songs.length - 1));
-  if (shuffle) { const first = songs[idx]; order = [first, ...shuffleArr(songs.filter((_, i) => i !== idx))]; idx = 0; }
-  queue = order.slice(); qIndex = idx;
+/* Startet die Wiedergabe einer Songliste.
+   startIndex: Index in songs (oder null = von vorne / bei Shuffle komplett zufällig)
+   forceShuffle: true/false setzt den Shuffle-Modus, undefined behält ihn bei */
+function playQueue(songs, startIndex, forceShuffle) {
+  if (!songs || !songs.length) return;
+  baseQueue = songs.slice();
+  if (forceShuffle === true) shuffle = true;
+  else if (forceShuffle === false) shuffle = false;
+  updateShuffleIcon();
+
+  const startSong = (startIndex != null && startIndex >= 0 && startIndex < baseQueue.length)
+    ? baseQueue[startIndex] : null;
+
+  if (shuffle) {
+    if (startSong) queue = [startSong, ...shuffleArr(baseQueue.filter((s) => s !== startSong))];
+    else queue = shuffleArr(baseQueue);            // „Zufällig"-Button: auch erster Song zufällig
+  } else {
+    queue = baseQueue.slice();
+  }
+  qIndex = startSong ? queue.indexOf(startSong) : 0;
+  if (qIndex < 0) qIndex = 0;
   loadAndPlay(true);
 }
 
@@ -349,6 +366,7 @@ function playNext(songIds) {
   if (!songs.length) return;
   if (qIndex < 0 || !queue.length) { playQueue(songs, 0); openNowPlaying(); return; }
   queue.splice(qIndex + 1, 0, ...songs);
+  baseQueue.splice(baseQueue.indexOf(currentSong()) + 1, 0, ...songs);
   toast(songs.length === 1 ? 'Wird als Nächstes gespielt' : `${songs.length} Songs in Warteschlange`);
 }
 
@@ -965,8 +983,8 @@ $('plSongs').addEventListener('click', async (e) => {
   const r = e.target.closest('[data-plidx]');
   if (r) { playQueue(_detailSongs, Number(r.dataset.plidx)); openNowPlaying(); }
 });
-$('plPlayAll').addEventListener('click', () => { if (_detailSongs.length) { shuffle = false; updateShuffleIcon(); playQueue(_detailSongs, 0); openNowPlaying(); } });
-$('plShuffle').addEventListener('click', () => { if (_detailSongs.length) { shuffle = true; updateShuffleIcon(); playQueue(_detailSongs, 0); openNowPlaying(); } });
+$('plPlayAll').addEventListener('click', () => { if (_detailSongs.length) { playQueue(_detailSongs, 0, false); openNowPlaying(); } });
+$('plShuffle').addEventListener('click', () => { if (_detailSongs.length) { playQueue(_detailSongs, null, true); openNowPlaying(); } });
 $('plAddSongs').addEventListener('click', async () => {
   if (_detailMode !== 'playlist') return;
   const p = await dbGetPlaylist(_detailPlId);
@@ -1003,8 +1021,8 @@ $('fileInput').addEventListener('change', (e) => { importFiles(e.target.files); 
 $('importPlBtn').addEventListener('click', () => $('plImportInput').click());
 $('plImportInput').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) importPlaylistZip(f); e.target.value = ''; });
 
-$('playAllBtn').addEventListener('click', () => { const v = visibleLibrary(); if (v.length) { shuffle = false; updateShuffleIcon(); playQueue(v, 0); openNowPlaying(); } });
-$('shuffleAllBtn').addEventListener('click', () => { const v = visibleLibrary(); if (v.length) { shuffle = true; updateShuffleIcon(); playQueue(v, 0); openNowPlaying(); } });
+$('playAllBtn').addEventListener('click', () => { const v = visibleLibrary(); if (v.length) { playQueue(v, 0, false); openNowPlaying(); } });
+$('shuffleAllBtn').addEventListener('click', () => { const v = visibleLibrary(); if (v.length) { playQueue(v, null, true); openNowPlaying(); } });
 
 $('miniPlayer').addEventListener('click', (e) => { if (e.target.closest('#miniPlay') || e.target.closest('#miniNext')) return; openNowPlaying(); });
 $('miniPlay').addEventListener('click', togglePlay);
@@ -1017,16 +1035,26 @@ $('nextBtn').addEventListener('click', () => next(false));
 $('shuffleBtn').addEventListener('click', () => {
   shuffle = !shuffle; updateShuffleIcon();
   const cur = currentSong();
-  if (cur) {
-    if (shuffle) { queue = [cur, ...shuffleArr(queue.filter((s) => s.id !== cur.id))]; qIndex = 0; }
+  if (!baseQueue.length) return;
+  if (shuffle) {
+    // einschalten: aktuellen Song behalten, Rest mischen
+    queue = cur ? [cur, ...shuffleArr(baseQueue.filter((s) => s !== cur))] : shuffleArr(baseQueue);
+    qIndex = 0;
+  } else {
+    // ausschalten: Originalreihenfolge wiederherstellen, an aktueller Stelle weiter
+    queue = baseQueue.slice();
+    qIndex = cur ? Math.max(0, queue.indexOf(cur)) : 0;
   }
 });
 $('repeatBtn').addEventListener('click', () => {
   repeat = repeat === 'off' ? 'all' : repeat === 'all' ? 'one' : 'off';
   audio.loop = (repeat === 'one');
+  renderRepeatBtn();
+});
+function renderRepeatBtn() {
   $('repeatBtn').textContent = repeat === 'one' ? '🔂' : '↻';
   $('repeatBtn').classList.toggle('on', repeat !== 'off');
-});
+}
 function updateShuffleIcon() { $('shuffleBtn').classList.toggle('on', shuffle); }
 
 /* Neue Playlist – direkt Songs auswählen */
@@ -1067,6 +1095,7 @@ async function main() {
   if (navigator.storage && navigator.storage.persist) { try { await navigator.storage.persist(); } catch {} }
   await refreshLibrary();
   updatePlayPauseIcons();
+  renderRepeatBtn();
   if ('serviceWorker' in navigator) { try { await navigator.serviceWorker.register('./sw.js'); } catch {} }
 }
 main().catch((e) => toast('Startfehler: ' + e.message, true));
