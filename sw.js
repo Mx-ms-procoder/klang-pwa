@@ -1,6 +1,6 @@
 /* Klang Service Worker – cached die App-Hülle für 100 % Offline-Start.
    Songs liegen separat in IndexedDB (nicht hier). */
-const CACHE = 'klang-shell-v1';
+const CACHE = 'klang-shell-v2';
 const SHELL = [
   './',
   './index.html',

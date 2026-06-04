@@ -63,12 +63,13 @@ img { -webkit-user-drag: none; }
 .tab.active { color: #fff; background: var(--primary); }
 
 /* ---------- Pills / Buttons ---------- */
-.bulk-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.bulk-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
 .pill {
   padding: 8px 14px; border-radius: 999px; font-size: 14px; font-weight: 600;
   background: var(--surface-2); color: var(--text);
 }
 .pill:active { transform: scale(0.96); }
+.pill.active { background: var(--primary); color: #fff; }
 .btn-primary {
   margin-top: 16px; padding: 12px 22px; border-radius: 999px;
   background: var(--primary); color: #fff; font-size: 16px; font-weight: 700;
@@ -79,9 +80,11 @@ img { -webkit-user-drag: none; }
 .row {
   display: flex; align-items: center; gap: 12px;
   padding: 8px 6px; border-radius: 10px;
+  transition: background 0.1s;
 }
 .row:active { background: var(--surface); }
 .row.playing { background: rgba(91,140,255,0.12); }
+.row.selected { background: rgba(91,140,255,0.15); }
 .row-art {
   width: 48px; height: 48px; border-radius: 8px; object-fit: cover;
   background: var(--surface-2); flex-shrink: 0;
@@ -92,6 +95,23 @@ img { -webkit-user-drag: none; }
 .row.playing .row-title { color: var(--primary); }
 .row-sub { font-size: 13px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
 .row-menu { width: 34px; height: 34px; display: grid; place-items: center; color: var(--text-3); font-size: 20px; flex-shrink: 0; }
+
+/* ---------- Auswahl-Checkbox ---------- */
+.row-check {
+  width: 26px; height: 26px; flex-shrink: 0; border-radius: 50%;
+  border: 2px solid var(--text-3);
+  display: grid; place-items: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+.row.selected .row-check {
+  background: var(--primary); border-color: var(--primary);
+}
+.row.selected .row-check::after {
+  content: '';
+  display: block; width: 6px; height: 10px;
+  border: 2.5px solid #fff; border-top: none; border-left: none;
+  transform: rotate(45deg) translate(-1px, -2px);
+}
 
 /* ---------- Leerzustand ---------- */
 .empty { text-align: center; padding: 60px 20px; }
@@ -118,6 +138,9 @@ img { -webkit-user-drag: none; }
 .mini-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mini-artist { font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+/* Im Select-Modus Mini-Player verstecken */
+body.select-mode #miniPlayer { display: none !important; }
+
 /* ---------- Now-Playing ---------- */
 .np {
   position: fixed; inset: 0; z-index: 100;
@@ -132,7 +155,9 @@ img { -webkit-user-drag: none; }
 .np-art {
   width: min(78vw, 360px); aspect-ratio: 1; border-radius: 18px; object-fit: cover;
   background: var(--surface-2); box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  transition: transform 0.12s;
 }
+.np-art:active { transform: scale(0.97); }
 .np-meta { width: 100%; text-align: left; margin-bottom: 18px; }
 .np-title { font-size: 24px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .np-artist { font-size: 17px; color: var(--text-2); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -150,8 +175,6 @@ img { -webkit-user-drag: none; }
   background: var(--primary); color: #fff;
 }
 .ctl.play svg, .icon-btn svg { display: block; }
-
-/* play/pause glyph via data-state */
 .play-glyph { width: 24px; height: 24px; }
 
 /* ---------- Toast ---------- */
@@ -165,7 +188,7 @@ img { -webkit-user-drag: none; }
 }
 .toast.err { background: var(--danger); color: #fff; }
 
-/* ---------- Overlay ---------- */
+/* ---------- Overlay (Import-Fortschritt) ---------- */
 .overlay {
   position: fixed; inset: 0; z-index: 300;
   background: rgba(0,0,0,0.6); display: grid; place-items: center;
@@ -182,3 +205,94 @@ img { -webkit-user-drag: none; }
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- Action Sheet / Bottom Sheet ---------- */
+.sheet-overlay {
+  position: fixed; inset: 0; z-index: 400;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  display: flex; flex-direction: column; justify-content: flex-end;
+}
+.sheet-overlay.hidden { display: none !important; }
+.sheet {
+  background: var(--surface);
+  border-radius: 22px 22px 0 0;
+  padding: 0 10px calc(var(--safe-bot) + 10px);
+  animation: sheetUp 0.28s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+@keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.sheet-drag {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--text-3); margin: 10px auto 14px;
+}
+.sheet-title {
+  font-size: 14px; font-weight: 600; color: var(--text-2);
+  text-align: center; padding: 0 16px 14px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sheet-btn {
+  display: block; width: 100%; padding: 16px;
+  font-size: 17px; text-align: left; border-radius: 14px;
+  margin-bottom: 3px; background: var(--surface-2);
+}
+.sheet-btn:active { opacity: 0.65; }
+.sheet-btn-danger { color: var(--danger); }
+.sheet-btn-cancel {
+  margin-top: 10px; font-weight: 700;
+  text-align: center; color: var(--text);
+  background: var(--surface-2);
+}
+
+/* ---------- Name-Eingabe Modal ---------- */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.65); display: grid; place-items: center;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.modal-overlay.hidden { display: none !important; }
+.modal-card {
+  background: var(--surface-2); border-radius: 20px;
+  padding: 26px 22px 18px; width: min(320px, 90vw);
+  animation: popIn 0.2s ease;
+}
+@keyframes popIn { from { transform: scale(0.88); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.modal-card h3 { margin: 0 0 18px; font-size: 18px; font-weight: 800; text-align: center; }
+.name-input {
+  width: 100%; padding: 13px 14px; border-radius: 12px;
+  background: var(--surface); border: none; outline: none;
+  color: var(--text); font-size: 16px; font-family: inherit;
+  margin-bottom: 16px; -webkit-user-select: text; user-select: text;
+}
+.modal-btns { display: flex; gap: 10px; }
+.modal-btn {
+  flex: 1; padding: 14px; border-radius: 12px;
+  font-size: 16px; font-weight: 700;
+  background: var(--surface); color: var(--text-2);
+}
+.modal-btn-primary { background: var(--primary); color: #fff; }
+.modal-btn:active { filter: brightness(0.85); }
+
+/* ---------- Selection Bar ---------- */
+.sel-bar {
+  position: fixed; left: 8px; right: 8px;
+  bottom: calc(var(--safe-bot) + 8px);
+  height: 62px; border-radius: 16px;
+  background: rgba(31,31,43,0.96);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  display: flex; align-items: center; padding: 0 16px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.55); z-index: 55; gap: 10px;
+}
+.sel-bar.hidden { display: none !important; }
+.sel-cancel {
+  font-size: 15px; color: var(--primary); font-weight: 600; flex-shrink: 0;
+  padding: 8px 4px;
+}
+#selCount { flex: 1; font-size: 14px; font-weight: 600; text-align: center; color: var(--text); }
+.sel-actions { display: flex; gap: 8px; }
+.sel-action-btn {
+  width: 42px; height: 42px; border-radius: 12px;
+  background: var(--surface-2); display: grid; place-items: center; color: var(--text);
+}
+.sel-action-btn:disabled { opacity: 0.3; }
+.sel-action-btn.danger { color: var(--danger); }
+.sel-action-btn:not(:disabled):active { filter: brightness(0.75); }

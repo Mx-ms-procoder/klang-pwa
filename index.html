@@ -39,8 +39,9 @@
     <!-- Songs -->
     <section id="libraryView" class="view">
       <div class="bulk-row">
-        <button id="playAllBtn" class="pill">▶ Alle abspielen</button>
-        <button id="shuffleAllBtn" class="pill">⤮ Zufällig</button>
+        <button id="playAllBtn" class="pill">&#9654; Alle</button>
+        <button id="shuffleAllBtn" class="pill">&#11822; Zufällig</button>
+        <button id="selectBtn" class="pill">&#9745; Auswählen</button>
       </div>
       <ul id="songList" class="list"></ul>
       <div id="emptyLib" class="empty">
@@ -53,19 +54,28 @@
 
     <!-- Playlists -->
     <section id="playlistsView" class="view hidden">
-      <button id="newPlaylistBtn" class="pill">＋ Neue Playlist</button>
+      <button id="newPlaylistBtn" class="pill">&#xff0b; Neue Playlist</button>
       <ul id="playlistList" class="list"></ul>
       <div id="emptyPl" class="empty">
         <div class="empty-emoji">📂</div>
         <p class="empty-title">Keine Playlists</p>
+        <p class="empty-sub">Tippe auf „+ Neue Playlist" oder halte einen Song in der Bibliothek gedrückt.</p>
       </div>
     </section>
 
     <!-- Playlist-Detail -->
     <section id="playlistDetail" class="view hidden">
-      <button id="plBack" class="back">‹ Zurück</button>
+      <button id="plBack" class="back">&#8249; Zurück</button>
       <h2 id="plName"></h2>
+      <div class="bulk-row">
+        <button id="plPlayAll" class="pill">&#9654; Alle</button>
+        <button id="plShuffle" class="pill">&#11822; Zufällig</button>
+      </div>
       <ul id="plSongs" class="list"></ul>
+      <div id="emptyPlDetail" class="empty hidden">
+        <div class="empty-emoji">🎵</div>
+        <p class="empty-title">Playlist ist leer</p>
+      </div>
     </section>
   </main>
 
@@ -84,7 +94,7 @@
 
   <!-- ============ Now-Playing (Vollbild) ============ -->
   <div id="nowPlaying" class="np hidden">
-    <button id="npClose" class="np-close" aria-label="Schließen">▾</button>
+    <button id="npClose" class="np-close" aria-label="Schließen">&#9662;</button>
     <div class="np-art-wrap"><img id="npArt" class="np-art" alt="" /></div>
     <div class="np-meta">
       <div id="npTitle" class="np-title"></div>
@@ -93,7 +103,7 @@
     <input id="seek" class="seek" type="range" min="0" max="1000" value="0" />
     <div class="np-times"><span id="curTime">0:00</span><span id="durTime">0:00</span></div>
     <div class="np-controls">
-      <button id="shuffleBtn" class="ctl small" aria-label="Zufall">⤮</button>
+      <button id="shuffleBtn" class="ctl small" aria-label="Zufall">&#11822;</button>
       <button id="prevBtn" class="ctl" aria-label="Zurück">
         <svg viewBox="0 0 24 24" width="30" height="30"><path fill="currentColor" d="M18 5a1 1 0 0 0-1.5-.87l-9 6.13a1 1 0 0 0 0 1.74l9 6.13A1 1 0 0 0 18 17V5Z"/><rect fill="currentColor" x="5" y="5" width="2" height="14" rx="1"/></svg>
       </button>
@@ -101,7 +111,7 @@
       <button id="nextBtn" class="ctl" aria-label="Weiter">
         <svg viewBox="0 0 24 24" width="30" height="30"><path fill="currentColor" d="M6 5a1 1 0 0 1 1.5-.87l9 6.13a1 1 0 0 1 0 1.74l-9 6.13A1 1 0 0 1 6 17V5Z"/><rect fill="currentColor" x="17" y="5" width="2" height="14" rx="1"/></svg>
       </button>
-      <button id="repeatBtn" class="ctl small" aria-label="Wiederholen">↻</button>
+      <button id="repeatBtn" class="ctl small" aria-label="Wiederholen">&#8635;</button>
     </div>
   </div>
 
@@ -116,6 +126,53 @@
     <div class="overlay-card">
       <div class="spinner"></div>
       <div id="importMsg">Importiere…</div>
+    </div>
+  </div>
+
+  <!-- ============ Action Sheet (Song / Playlist Menü) ============ -->
+  <div id="actionSheet" class="sheet-overlay hidden">
+    <div class="sheet">
+      <div class="sheet-drag"></div>
+      <div id="sheetTitle" class="sheet-title"></div>
+      <div id="sheetActions"></div>
+      <button id="sheetCancel" class="sheet-btn sheet-btn-cancel">Abbrechen</button>
+    </div>
+  </div>
+
+  <!-- ============ Playlist Picker Sheet ============ -->
+  <div id="plPickerSheet" class="sheet-overlay hidden">
+    <div class="sheet">
+      <div class="sheet-drag"></div>
+      <div class="sheet-title">Zur Playlist hinzufügen</div>
+      <div id="plPickerList"></div>
+      <button id="plPickerNew" class="sheet-btn">&#xff0b; Neue Playlist erstellen</button>
+      <button id="plPickerCancel" class="sheet-btn sheet-btn-cancel">Abbrechen</button>
+    </div>
+  </div>
+
+  <!-- ============ Name-Eingabe Modal ============ -->
+  <div id="nameModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h3 id="nameModalTitle"></h3>
+      <input id="nameInput" class="name-input" type="text" maxlength="60" autocomplete="off" />
+      <div class="modal-btns">
+        <button id="nameCancel" class="modal-btn">Abbrechen</button>
+        <button id="nameConfirm" class="modal-btn modal-btn-primary">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Selection Bar (Mehrfachauswahl) ============ -->
+  <div id="selectionBar" class="sel-bar hidden">
+    <button id="selCancel" class="sel-cancel">Abbrechen</button>
+    <span id="selCount"></span>
+    <div class="sel-actions">
+      <button id="selAddPlaylist" class="sel-action-btn" disabled title="Zur Playlist hinzufügen">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M3 5a1 1 0 0 1 1-1h16a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1Zm0 5a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1Zm0 5a1 1 0 0 1 1-1h7a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1ZM17 13a1 1 0 0 1 1 1v1h1a1 1 0 1 1 0 2h-1v1a1 1 0 1 1-2 0v-1h-1a1 1 0 1 1 0-2h1v-1a1 1 0 0 1 1-1Z"/></svg>
+      </button>
+      <button id="selDelete" class="sel-action-btn danger" disabled title="Löschen">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M9 3h6a1 1 0 0 1 0 2H9a1 1 0 0 1 0-2ZM5 5a1 1 0 0 1 0-2h14a1 1 0 1 1 0 2H5Zm1 2h12l-1.17 13.14A1 1 0 0 1 15.83 21H8.17a1 1 0 0 1-.997-.86L6 7Zm4 2a1 1 0 0 0-1 1v6a1 1 0 1 0 2 0V9a1 1 0 0 0-1-1Zm4 0a1 1 0 0 0-1 1v6a1 1 0 1 0 2 0V9a1 1 0 0 0-1-1Z"/></svg>
+      </button>
     </div>
   </div>
 
