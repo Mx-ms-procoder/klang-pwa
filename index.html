@@ -42,7 +42,9 @@
         <button id="playAllBtn" class="pill">&#9654; Alle</button>
         <button id="shuffleAllBtn" class="pill">&#11822; Zufällig</button>
         <button id="selectBtn" class="pill">&#9745; Auswählen</button>
+        <button id="sortBtn" class="pill">&#8645; Sortieren</button>
       </div>
+      <div id="libCount" class="lib-count"></div>
       <ul id="songList" class="list"></ul>
       <div id="emptyLib" class="empty">
         <div class="empty-emoji">🎵</div>
@@ -54,9 +56,12 @@
 
     <!-- Playlists -->
     <section id="playlistsView" class="view hidden">
-      <button id="newPlaylistBtn" class="pill">&#xff0b; Neue Playlist</button>
+      <div class="bulk-row">
+        <button id="newPlaylistBtn" class="pill">&#xff0b; Neue Playlist</button>
+        <button id="importPlBtn" class="pill">&#11015; Playlist importieren</button>
+      </div>
       <ul id="playlistList" class="list"></ul>
-      <div id="emptyPl" class="empty">
+      <div id="emptyPl" class="empty hidden">
         <div class="empty-emoji">📂</div>
         <p class="empty-title">Keine Playlists</p>
         <p class="empty-sub">Tippe auf „+ Neue Playlist" oder halte einen Song in der Bibliothek gedrückt.</p>
@@ -70,11 +75,13 @@
       <div class="bulk-row">
         <button id="plPlayAll" class="pill">&#9654; Alle</button>
         <button id="plShuffle" class="pill">&#11822; Zufällig</button>
+        <button id="plAddSongs" class="pill">&#xff0b; Songs</button>
       </div>
       <ul id="plSongs" class="list"></ul>
       <div id="emptyPlDetail" class="empty hidden">
         <div class="empty-emoji">🎵</div>
         <p class="empty-title">Playlist ist leer</p>
+        <p class="empty-sub">Tippe auf „+ Songs", um welche hinzuzufügen.</p>
       </div>
     </section>
   </main>
@@ -97,8 +104,11 @@
     <button id="npClose" class="np-close" aria-label="Schließen">&#9662;</button>
     <div class="np-art-wrap"><img id="npArt" class="np-art" alt="" /></div>
     <div class="np-meta">
-      <div id="npTitle" class="np-title"></div>
-      <div id="npArtist" class="np-artist"></div>
+      <div class="np-meta-text">
+        <div id="npTitle" class="np-title"></div>
+        <div id="npArtist" class="np-artist"></div>
+      </div>
+      <button id="favBtn" class="np-fav" aria-label="Favorit">&#9825;</button>
     </div>
     <input id="seek" class="seek" type="range" min="0" max="1000" value="0" />
     <div class="np-times"><span id="curTime">0:00</span><span id="durTime">0:00</span></div>
@@ -115,8 +125,28 @@
     </div>
   </div>
 
-  <!-- verstecktes Datei-Eingabefeld -->
+  <!-- ============ Song-Picker (Vollbild) ============ -->
+  <div id="pickerOverlay" class="picker hidden">
+    <header class="picker-top">
+      <button id="pickerCancel" class="picker-cancel">Abbrechen</button>
+      <div id="pickerTitle" class="picker-title">Songs hinzufügen</div>
+      <button id="pickerDone" class="picker-done">Fertig</button>
+    </header>
+    <div class="searchbar">
+      <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M10 4a6 6 0 1 0 3.7 10.7l4.3 4.3a1 1 0 0 0 1.4-1.4l-4.3-4.3A6 6 0 0 0 10 4Zm-4 6a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z"/></svg>
+      <input id="pickerSearch" type="search" placeholder="Songs suchen…" autocomplete="off" />
+    </div>
+    <ul id="pickerList" class="list"></ul>
+    <div id="pickerEmpty" class="empty hidden">
+      <div class="empty-emoji">🎵</div>
+      <p class="empty-title">Keine Songs verfügbar</p>
+    </div>
+  </div>
+
+  <!-- verstecktes Datei-Eingabefeld (Songs) -->
   <input id="fileInput" type="file" accept="audio/*,.mp3,.zip,application/zip" multiple hidden />
+  <!-- verstecktes Datei-Eingabefeld (Playlist-ZIP) -->
+  <input id="plImportInput" type="file" accept=".zip,application/zip" hidden />
 
   <!-- Toast -->
   <div id="toast" class="toast hidden"></div>
@@ -129,7 +159,7 @@
     </div>
   </div>
 
-  <!-- ============ Action Sheet (Song / Playlist Menü) ============ -->
+  <!-- ============ Action Sheet ============ -->
   <div id="actionSheet" class="sheet-overlay hidden">
     <div class="sheet">
       <div class="sheet-drag"></div>
@@ -164,7 +194,8 @@
 
   <!-- ============ Selection Bar (Mehrfachauswahl) ============ -->
   <div id="selectionBar" class="sel-bar hidden">
-    <button id="selCancel" class="sel-cancel">Abbrechen</button>
+    <button id="selCancel" class="sel-cancel">Fertig</button>
+    <button id="selAll" class="sel-all">Alle</button>
     <span id="selCount"></span>
     <div class="sel-actions">
       <button id="selAddPlaylist" class="sel-action-btn" disabled title="Zur Playlist hinzufügen">
